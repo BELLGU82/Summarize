@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record. Transcribe. Summarize. Share.</title>
+    <!-- ספריות חיוניות -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- אייקונים (Font Awesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <!-- גופנים -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Miriam Libre:wght@300;400;500;700&display=swap" />
+    <style>
+      /*=== משתני סגנון ===*/
+      :root {
+        --bg-color: #fefbff;
+        --grid-color: #e9e6e6;
+        --text-color: #313131;
+        --card-bg: #ffffff;
+        --highlight-color: #fc7bac;
+        --success-color: #4CAF50;
+        --warning-color: #FFC107;
+        --error-color: #F44336;
+        --border-radius: 8px;
+        --border-thickness: 2px;
+        --shadow-offset: 3px;
+        --transition-time: 0.3s;
+      }
+
+      /* מצב כהה */
+      .dark-mode {
+        --bg-color: #121212;
+        --grid-color: #222222;
+        --text-color: #e0e0e0;
+        --card-bg: #1e1e1e;
+        --highlight-color: #BB4D79;
+      }
+
+      /* סגנונות בסיסיים */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin-top: 80px;
+        padding: 0;
+        background-color: var(--bg-color);
+        font-family: "Miriam Libre", monospace;
+        font-size: 0.8rem;
+        font-weight: 300;
+        color: var(--text-color);
+        min-height: 100vh;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-image:
+          linear-gradient(var(--grid-color) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+        background-size: 20px 20px;
+        background-attachment: fixed;
+        transition: background-color var(--transition-time), color var(--transition-time);
+      }
+
+      h1 {
+        font-family: "VT323", monospace;
+        margin-bottom: 1rem;
+        font-size: 3rem;
+        font-weight: 300;
+      }
+
+      h2 {
+        font-family: "Miriam Libre";
+        font-size: 0.7rem;
+        font-weight: 300;
+      }
+      
+      h3, h4, h5, h6 {
+        font-family: "Miriam Libre";
+        font-size: 0.9rem;
+        font-weight: 300;
+      }
+
+      /* מיכל ראשי */
+      .container {
+        width: 90%;
+        max-width: 1000px;
+        margin: 40px auto;
+        position: relative;
+      }
+
+      /* סרגל ניווט עליון */
+      .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--card-bg);
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        transition: background-color var(--transition-time);
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .nav-logo h1 {
+        font-size: 1rem;
+        margin: 0;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 15px;
+      }
+
+      /* כותרת ראשית */
+      .main-title {
+        font-size: 4rem;
+        font-weight: 400;
+        margin-bottom: 70px;
+        text-align: center;
+      }
+
+      /* אינדיקטור התקדמות (סטפר) */
+      .stepper {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 50px;
+        position: relative;
+      }
+
+      .stepper::before {
+        content: '';
+        position: absolute;
+        top: 14px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--grid-color);
+        z-index: -1;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .step-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: var(--card-bg);
+        border: 2px solid var(--grid-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-time);
+      }
+
+      .step.active .step-icon {
+        background-color: var(--highlight-color);
+        border-color: var(--highlight-color);
+        color: white;
+      }
+
+      .step.completed .step-icon {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+      }
+
+      .step-label {
+        font-family: "Miriam Libre";
+        font-size: 0.9rem;
+        font-weight: 400;
+      }
+
+      /* סרגל עליון עם כפתורים */
+      .top-bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+        margin-bottom: 40px;
+      }
+
+      /* כפתור בסגנון רטרו */
+      .retro-button {
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        color: var(--text-color);
+        font-family: "Miriam Libre";
+        font-size: 0.8rem;
+        font-weight: 300;
+        cursor: crosshair;
+        padding: 15px 25px;
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .retro-button:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--highlight-color);
+        border-color: var(--highlight-color);
+      }
+
+      .retro-button:active {
+        transform: translate(1px, 1px);
+        box-shadow: none;
+      }
+
+      .retro-button i {
+        font-size: 1.1em;
+      }
+
+      /* בחירת שפה */
+      .language-selection {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 10px 25px;
+        transition: all 0.2s ease;
+      }
+
+      .language-selection:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--highlight-color);
+        border-color: var(--highlight-color);
+      }
+
+      .language-selection label {
+        font-family: "Miriam Libre";
+        font-size: 0.8rem;
+        font-weight: 300;
+        margin-right: 3px;
+      }
+
+      .language-selection select {
+        font-family: "Miriam Libre";
+        font-size: 0.7rem;
+        font-weight: 300;
+        padding: 5px;
+        border: none;
+        outline: none;
+        background-color: transparent;
+        cursor: crosshair;
+        color: var(--text-color);
+      }
+
+      /* כפתור סגירה לקונטיינרים */
+      .close-container {
+        position: absolute;
+        top: 2px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        font-weight: 300;
+        color: var(--text-color);
+        cursor: crosshair;
+        z-index: 10;
+        transition: color 0.2s ease;
+      }
+
+      .close-container:hover {
+        color: var(--highlight-color);
+      }
+
+      /* קונטיינרים לחלקים שונים */
+      .api-guide-container,
+      .audio-selection-container,
+      .summarization-guide-container {
+        position: relative;
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin-bottom: 20px;
+        display: none;
+        animation: fadeIn 0.3s ease;
+        transition: background-color var(--transition-time);
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .api-guide-container.show,
+      .audio-selection-container.show,
+      .summarization-guide-container.show {
+        display: block;
+      }
+
+      .api-guide-container h3,
+      .audio-selection-container h3,
+      .summarization-guide-container h3 {
+        margin-top: 0;
+      }
+
+      .api-guide-container input,
+      .audio-selection-container input,
+      .summarization-guide-container input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid var(--grid-color);
+        border-radius: var(--border-radius);
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.7rem;
+        font-weight: 300;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: all 0.2s ease;
+      }
+
+      .api-guide-container input:focus,
+      .audio-selection-container input:focus,
+      .summarization-guide-container input:focus {
+        outline: none;
+        border-color: var(--highlight-color);
+        box-shadow: 0 0 0 2px rgba(252, 123, 172, 0.25);
+      }
+
+      /* כרטיסיות אודיו */
+      .audio-tab-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .audio-tab-button {
+        flex: 0 0 auto;
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.8rem;
+        font-weight: 300;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .audio-tab-button.active {
+        background-color: var(--highlight-color);
+        color: #fff;
+        border-color: #fff;
+      }
+
+      .audio-tab-button:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--highlight-color);
+        border-color: var(--highlight-color);
+      }
+
+      .audio-tab-content {
+        display: none;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        position: relative;
+        transition: background-color var(--transition-time);
+      }
+
+      .audio-tab-content.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .audio-confirm-buttons {
+        display: none;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .audio-confirm-buttons.show {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+      }
+
+      /* אזור הקלטה */
+      .record-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .record-visualization {
+        width: 100%;
+        height: 60px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        position: relative;
+        display: none;
+      }
+
+      .record-visualization.active {
+        display: block;
+      }
+
+      .visualization-bars {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        height: 100%;
+        padding: 0 10px;
+      }
+
+      .bar {
+        width: 4px;
+        background-color: var(--highlight-color);
+        border-radius: 2px 2px 0 0;
+        transition: height 0.1s ease;
+      }
+
+      .record-timer {
+        font-size: 1.5rem;
+        font-family: 'VT323', monospace;
+        color: var(--highlight-color);
+        display: none;
+      }
+
+      .record-timer.active {
+        display: block;
+      }
+
+      .record-controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      /* שדות הקובץ */
+      #audioFile, #textFile {
+        margin-top: 10px;
+        padding: 10px;
+        width: 100%;
+        font-family: "Miriam Libre";
+        font-size: 0.8rem;
+        font-weight: 300;
+        border: 2px dashed var(--grid-color);
+        border-radius: var(--border-radius);
+        background-color: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      #audioFile:hover, #textFile:hover {
+        border-color: var(--highlight-color);
+      }
+
+      /* Drop zone for files */
+      .drop-zone {
+        border: 2px dashed var(--grid-color);
+        border-radius: var(--border-radius);
+        padding: 25px;
+        text-align: center;
+        margin: 10px 0;
+        transition: all 0.2s ease;
+        background-color: rgba(var(--bg-color-rgb), 0.5);
+        position: relative;
+      }
+
+      .drop-zone:hover, .drop-zone.drag-over {
+        border-color: var(--highlight-color);
+        background-color: rgba(var(--highlight-color-rgb), 0.05);
+      }
+
+      .drop-zone i {
+        font-size: 2em;
+        color: var(--highlight-color);
+        margin-bottom: 10px;
+      }
+
+      .drop-zone-text {
+        margin-top: 10px;
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.9rem;
+        font-weight: 300;
+      }
+
+      /* אזור תמלול */
+      .transcribe-card {
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        margin: 0 auto 20px;
+        padding: 20px;
+        text-align: center;
+        transition: background-color var(--transition-time);
+      }
+
+      #transcribeButton {
+        background-color: var(--highlight-color);
+        color: white;
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.9rem;
+        font-weight: 300;
+        padding: 12px 24px;
+        cursor: crosshair;
+        border: none;
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
+      }
+
+      #transcribeButton:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      #transcribeButton:disabled {
+        background-color: var(--grid-color);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      /* לוגו טעינה */
+      .loader {
+        border: 5px solid var(--bg-color);
+        border-top: 5px solid var(--highlight-color);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+        display: none;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* מד התקדמות */
+      .progress-container {
+        margin: 20px 0;
+        display: none;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: var(--border-thickness) solid var(--text-color);
+      }
+
+      .progress-fill {
+        height: 100%;
+        background-color: var(--highlight-color);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-top: 5px;
+        font-size: 0.9em;
+        color: var(--text-color);
+      }
+
+      /* כרטיס תוצאות התמלול */
+      .transcription-card.results {
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        margin-bottom: 20px;
+        display: none;
+      }
+
+      .transcription-card.results.has-content {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      /* כפתורי כרטיסיות */
+      .tab-buttons {
+        display: flex;
+        margin-bottom: 20px;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        flex: 0 0 auto;
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-button.active {
+        background-color: var(--highlight-color);
+        color: #fff;
+        border-color: #fff;
+      }
+
+      .tab-button:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--highlight-color);
+        border-color: var(--highlight-color);
+      }
+
+      /* תוכן כרטיסיות */
+      .tab-content {
+        display: none;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        position: relative;
+        transition: background-color var(--transition-time);
+      }
+
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      /* מכיל תמלול */
+      .transcription-container {
+        position: relative;
+        max-height: 300px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        margin-bottom: 40px;
+      }
+
+      .transcription-container.expanded {
+        max-height: none;
+        margin-bottom: 10px;
+      }
+
+      /* כפתור הרחבה */
+      .expand-button {
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--highlight-color);
+        color: #fff;
+        border: none;
+        padding: 5px 15px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        z-index: 1;
+        transition: all 0.3s ease;
+      }
+
+      .expand-button:hover {
+        background-color: var(--text-color);
+      }
+
+      .expanded .expand-button {
+        position: static;
+        transform: none;
+        margin: 10px auto;
+        display: block;
+      }
+
+      /* אפקט דעיכה */
+      .transcription-fade {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 50px;
+        background: linear-gradient(transparent, var(--bg-color));
+        pointer-events: none;
+        transition: opacity 0.3s ease, background var(--transition-time);
+      }
+
+      .expanded .transcription-fade {
+        display: none;
+      }
+
+      /* כפתור סגירה */
+      .close-button {
+        position: absolute;
+        top: 10px; right: 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-color);
+        transition: color 0.2s ease;
+      }
+
+      .close-button:hover {
+        color: var(--highlight-color);
+      }
+
+      /* כפתורי בקרה */
+      .control-button {
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        padding: 8px 15px;
+        color: var(--text-color);
+        cursor: pointer;
+        font-family: "Miriam Libre";
+        font-size: 0.8rem;
+        font-weight: 300;
+        margin: 0 5px 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .control-button:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--highlight-color);
+        border-color: var(--highlight-color);
+      }
+
+      .control-button:active {
+        transform: translate(1px, 1px);
+        box-shadow: none;
+      }
+
+      /* פופאפים */
+      .popup {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(3px);
+      }
+
+      .popup-content {
+        background-color: var(--card-bg);
+        border: var(--border-thickness) solid var(--text-color);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+        border-radius: var(--border-radius);
+        max-width: 700px;
+        width: 90%;
+        padding: 20px;
+        position: relative;
+        max-height: 80vh;
+        overflow-y: auto;
+        transition: background-color var(--transition-time);
+      }
+
+      .popup-content h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+      }
+
+      #summaryContent {
+        font-family: "Miriam Libre";
+        font-size: 0.9rem;
+        font-weight: 300;
+        line-height: 1.5;
+        max-height: 50vh;
+        overflow-y: auto;
+        padding: 15px;
+        background-color: var(--bg-color);
+        border-radius: var(--border-radius);
+        margin: 15px 0;
+        text-align: right;
+        transition: background-color var(--transition-time);
+      }
+
+      .popup-footer {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      /* הודעות מערכת */
+      .toast-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 10px;
+        max-width: 90%;
+        width: 400px;
+      }
+
+      .toast {
+        padding: 12px 20px;
+        border-radius: var(--border-radius);
+        background-color: var(--card-bg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transform: translateY(20px);
+        animation: toastIn 0.3s forwards;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-right: 4px solid var(--text-color);
+      }
+
+      .toast.success {
+        border-right-color: var(--success-color);
+      }
+
+      .toast.warning {
+        border-right-color: var(--warning-color);
+      }
+
+      .toast.error {
+        border-right-color: var(--error-color);
+      }
+
+      .toast-icon {
+        font-size: 1.2em;
+      }
+
+      .toast-message {
+        flex: 1;
+      }
+
+      .toast-close {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 1.1em;
+      }
+
+      @keyframes toastIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes toastOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-20px); }
+      }
+
+      /* כפתור החלפת תצוגה (כהה/בהיר) */
+      .theme-toggle {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 1.2em;
+        transition: color 0.2s ease;
+      }
+
+      .theme-toggle:hover {
+        color: var(--highlight-color);
+      }
+
+      /* עריכת תמלול */
+      .edit-transcription {
+        width: 100%;
+        min-height: 200px;
+        padding: 10px;
+        border: 1px solid var(--grid-color);
+        border-radius: var(--border-radius);
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.9rem;
+        font-weight: 300;;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        resize: vertical;
+        display: none;
+      }
+
+      .edit-transcription.show {
+        display: block;
+      }
+
+      /* טיפ אקדח */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: var(--text-color);
+        color: var(--bg-color);
+        text-align: center;
+        border-radius: var(--border-radius);
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.7rem;
+        font-weight: 300;
+      }
+
+      .tooltip .tooltiptext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: var(--text-color) transparent transparent transparent;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* קיצורי מקלדת */
+      .keyboard-shortcuts {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .keyboard-shortcut {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.85em;
+        color: var(--text-color);
+        opacity: 0.8;
+      }
+
+      .keyboard-shortcut kbd {
+        display: inline-block;
+        background-color: var(--card-bg);
+        padding: 2px 5px;
+        border-radius: 3px;
+        border: 1px solid var(--grid-color);
+        box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+        font-family: monospace;
+        font-size: 0.9em;
+      }
+
+      /* תגובה למובייל */
+      @media (max-width: 768px) {
+        .navbar {
+          padding: 8px 15px;
+        }
+
+        .nav-logo h1 {
+        font-family: "Miriam Libre", monospace;;
+        font-size: 0.9rem;
+        font-weight: 300;
+        }
+
+        .main-title {
+          font-size: 2em;
+          margin-bottom: 20px;
+        }
+
+        .step-label {
+          display: none;
+        }
+
+        .retro-button {
+          padding: 12px 20px;
+          font-size: 0.9em;
+          font-family: "Miriam Libre", monospace;;
+          font-weight: 300;
+        }
+
+        .language-selection {
+          padding: 10px;
+        }
+
+        .language-selection label {
+          font-family: "Miriam Libre", monospace;;
+          font-size: 0.8rem;
+          font-weight: 300;
+        }
+
+        .audio-tab-button {
+          padding: 8px;
+          font-size: 0.8em;
+        }
+
+        .api-guide-container,
+        .audio-selection-container,
+        .summarization-guide-container {
+          padding: 15px;
+        }
+
+        .top-bar {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .container {
+          width: 95%;
+          margin: 30px auto;
+        }
+
+        .popup-content {
+          width: 95%;
+          padding: 15px;
+        }
+
+        .control-button {
+          padding: 6px 12px;
+          font-family: "Miriam Libre", monospace;;
+          font-size: 0.8rem;
+          font-weight: 300;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- סרגל ניווט קבוע -->
+    <div class="navbar">
+      <div class="nav-logo">
+        <i class="fas fa-microphone-alt" style="color: var(--highlight-color);"></i>
+        <h2>Record. Transcribe. Summarize. Share.</h2>
+      </div>
+      <div class="nav-links">
+        <button class="theme-toggle" title="החלף מצב תצוגה">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="container">
+      <h1 class="main-title">Record. Transcribe. Summarize. Share.</h1>
+
+      <!-- אינדיקטור התקדמות (סטפר) -->
+      <div class="stepper">
+        <div class="step active" id="step1">
+          <div class="step-icon"><i class="fas fa-file-audio"></i></div>
+          <span class="step-label">בחר</span>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-icon"><i class="fas fa-microphone"></i></div>
+          <span class="step-label">תמלל</span>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-icon"><i class="fas fa-file-alt"></i></div>
+          <span class="step-label">ערוך</span>
+        </div>
+        <div class="step" id="step4">
+          <div class="step-icon"><i class="fas fa-clipboard-list"></i></div>
+          <span class="step-label">סכם</span>
+        </div>
+        <div class="step" id="step5">
+          <div class="step-icon"><i class="fas fa-share-alt"></i></div>
+          <span class="step-label">שתף</span>
+        </div>
+      </div>
+
+      <!-- אזור עליון: כפתורי API + Guide, בחירת מקור אודיו, ובחירת שפה -->
+      <div class="top-bar">
+        <button class="retro-button" onclick="toggleApiGuide()">
+          <i class="fas fa-key"></i> API + הגדרות
+        </button>
+        <button class="retro-button" onclick="toggleAudioSelection()">
+          <i class="fas fa-volume-up"></i>הקלט/ העלה קובץ אודיו
+        </button>
+        <button class="retro-button" id="refreshButton" onclick="refreshApp()">
+          <i class="fas fa-sync-alt"></i> רענן
+        </button>
+        <div class="language-selection">
+          <label for="transcriptionLanguage">בחר שפה:</label>
+          <select id="transcriptionLanguage">
+            <option value="auto" selected>זיהוי אוטומטי</option>
+            <option value="he">עברית</option>
+            <option value="en">אנגלית</option>
+            <option value="ar">ערבית</option>
+            <option value="ru">רוסית</option>
+            <option value="fr">צרפתית</option>
+            <option value="es">ספרדית</option>
+            <option value="de">גרמנית</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- קונטיינר API Guide (מפתחות לתמלול וסיכום) -->
+      <div class="api-guide-container" id="apiGuideContainer">
+        <button class="close-container" onclick="toggleApiGuide()">&times;</button>
+        <h3>API Keys</h3>
+        <input type="password" id="apiKeyInput" placeholder="Groq API Key" />
+        <button class="control-button" id="showHideApiKey"><i class="fas fa-eye"></i> הצג</button>
+        
+        <input type="password" id="summarizationApiKeyInput" placeholder="OpenRouter API Key" />
+        <button class="control-button" id="showHideSummKey"><i class="fas fa-eye"></i> הצג</button>
+        
+        <button class="control-button" onclick="testApiKeys()">
+          <i class="fas fa-check-circle"></i> בדוק תקינות
+        </button>
+        <button class="control-button" onclick="saveApiKeys()">
+          <i class="fas fa-save"></i> שמור מפתחות
+        </button>
+        
+        <hr style="margin: 20px 0;" />
+        
+        <h4>הגדרות נוספות</h4>
+        <div style="margin: 15px 0;">
+          <label>
+            לשמור את המפתחות?
+            <input type="checkbox" id="saveApiLocally" checked />
+          </label>
+        </div>
+        
+        <div style="margin: 15px 0;">
+          <label>איכות תמלול:</label>
+          <select id="transcriptionQuality" style="margin-right: 10px; font-family: Miriam Libre; font-size: 0.7rem; font-weight: 300; padding: 5px; border-radius: var(--border-radius);">
+            <option value="high">גבוהה (מדויק יותר, איטי יותר)</option>
+            <option value="medium" selected>רגילה (מאוזן)</option>
+            <option value="low">נמוכה (מהיר יותר, פחות מדויק)</option>
+          </select>
+        </div>
+        
+        <div style="margin: 15px 0;">
+          <label>בחר מודל :</label>
+          <select id="summaryModel" style="margin-right: 10px; font-family: Miriam Libre; font-size: 0.7rem; font-weight: 300; padding: 5px; border-radius: var(--border-radius);">
+            <option value="google/gemini-2.0-pro-exp-02-05:free" selected>Gemini 2.0 Pro (מומלץ לעברית)</option>
+            <option value="mistralai/mistral-large-2:free">Mistral Large 2</option>
+            <option value="anthropic/claude-3-opus-20240229:free">Claude 3 Opus</option>
+            <option value="anthropic/claude-3-sonnet-20240229:free">Claude 3 Sonnet</option>
+            <option value="meta-llama/llama-3-70b-instruct:free">Llama 3 70B</option>
+          </select>
+        </div>
+        
+        <hr style="margin: 20px 0;" />
+        
+        <h4>מדריך שימוש</h4>
+        <ol>
+          <li>עבור תמלול: היכנסו לאתר <a href="https://console.groq.com" target="_blank">console.groq.com</a> לקבלת מפתח API תמלול.</li>
+          <li>עבור סיכום: השתמשו במודל Gemini של Google דרך OpenRouter וקבלו מפתח דרך <a href="https://openrouter.ai" target="_blank">openrouter.ai</a>.</li>
+          <li>ניתן להקליט ישירות, להעלות קובץ txt. להעלות קובץ אודיו.</li>
+          <li>לאחר התמלול, ניתן לערוך את הטקסט ולייצא לפורמטים שונים.</li>
+        </ol>
+        
+        <div class="keyboard-shortcuts">
+          <div class="keyboard-shortcut">
+            <kbd>Alt</kbd> + <kbd>R</kbd> - רענן
+          </div>
+          <div class="keyboard-shortcut">
+            <kbd>Alt</kbd> + <kbd>T</kbd> - תמלל
+          </div>
+          <div class="keyboard-shortcut">
+            <kbd>Alt</kbd> + <kbd>S</kbd> - סכם
+          </div>
+          <div class="keyboard-shortcut">
+            <kbd>Alt</kbd> + <kbd>C</kbd> - העתק
+          </div>
+        </div>
+      </div>
+
+      <!-- קונטיינר בחירת מקור אודיו -->
+      <div class="audio-selection-container" id="audioSelectionContainer">
+        <button class="close-container" onclick="toggleAudioSelection()">&times;</button>
+        <h3>קובץ/הקלטה לתמלול</h3>
+        <div class="audio-tab-buttons">
+          <button class="audio-tab-button" onclick="showAudioTab('file')">קובץ אודיו</button>
+          <button class="audio-tab-button" onclick="showAudioTab('record')">הקלטה</button>
+          <button class="audio-tab-button" onclick="showAudioTab('text')">קובץ טקסט</button>
+        </div>
+        
+        <!-- טאב קובץ אודיו -->
+        <div class="audio-tab-content" id="fileInputTab">
+          <div class="drop-zone" id="audioDropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <div class="drop-zone-text">גרור ושחרר קובץ אודיו או לחץ לבחירה</div>
+            <input type="file" id="audioFile" accept="audio/*,video/*" onchange="handleFileSelect(event)" />
+          </div>
+          <div class="tooltip">
+            <span class="tooltiptext">ניתן להעלות קבצי אודיו ווידאו (MP3, WAV, MP4, M4A, AAC)</span>
+          </div>
+          <div id="fileDetails" style="margin-top: 10px; font-size: 0.7em;"></div>
+        </div>
+        
+        <!-- טאב הקלטה -->
+        <div class="audio-tab-content" id="recordInputTab">
+          <div class="record-container">
+            <div class="record-visualization" id="recordVisualization">
+              <div class="visualization-bars" id="visualizationBars"></div>
+            </div>
+            <div class="record-timer" id="recordTimer">00:00</div>
+            <div class="record-controls">
+              <button id="recordButton" class="control-button" onclick="toggleRecording()">
+                <i class="fas fa-microphone"></i> התחל הקלטה
+              </button>
+              <button id="pauseRecordButton" class="control-button" onclick="pauseRecording()" disabled>
+                <i class="fas fa-pause"></i> השהה
+              </button>
+            </div>
+            <div id="recordingStatus" style="display: none; margin-top: 15px;">
+              <p><i class="fas fa-check-circle" style="color: var(--success-color);"></i> יש הקלטה בזיכרון</p>
+              <audio id="recordingPreview" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+              <button class="control-button" onclick="playRecording()">
+                <i class="fas fa-play"></i> נגן הקלטה
+              </button>
+              <button class="control-button" onclick="deleteRecording()">
+                <i class="fas fa-trash"></i> מחק הקלטה
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- טאב קובץ טקסט -->
+        <div class="audio-tab-content" id="textInputTab">
+          <div class="drop-zone" id="textDropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <div class="drop-zone-text">גרור ושחרר קובץ .txt או לחץ לבחירה</div>
+            <input type="file" id="textFile" accept=".txt,.srt" onchange="handleTextFileSelect(event)" />
+          </div>
+          <div class="tooltip">
+            <span class="tooltiptext">ניתן להעלות קבצי טקסט, או כתוביות SRT</span>
+          </div>
+          <div id="textFileDetails" style="margin-top: 10px; font-size: 0.8em;"></div>
+          
+          <!-- כפתור סיכום ישיר -->
+          <button class="control-button" id="summarizeTextDirectly" style="margin-top: 15px;" onclick="summarizeTextFile()">
+            <i class="fas fa-clipboard-list"></i> סכם
+          </button>
+        </div>
+        
+        <!-- כפתורי אישור -->
+        <div class="audio-confirm-buttons" id="audioConfirmButtons">
+          <button class="control-button" onclick="cancelAudio()">
+            <i class="fas fa-times"></i> ביטול
+          </button>
+          <button class="control-button" onclick="confirmAudioInput()">
+            <i class="fas fa-check"></i> אישור
+          </button>
+        </div>
+      </div>
+
+      <!-- כרטיס בקרה לתמלול -->
+      <div class="transcribe-card control">
+        <button id="transcribeButton" onclick="transcribe()">
+          <i class="fas fa-pencil-alt"></i> תמלל
+        </button>
+        <div id="loader" class="loader"></div>
+        <div class="progress-container" id="progressContainer">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+      </div>
+
+      <!-- כרטיס תוצאות תמלול -->
+      <div class="transcription-card results" id="transcriptionCard">
+        <div class="tab-buttons">
+          <button class="tab-button active" onclick="showTab('srt')">SRT</button>
+          <button class="tab-button" onclick="showTab('plainText')">טקסט</button>
+          <button class="tab-button" onclick="showTab('editText')">עריכה</button>
+        </div>
+        
+        <!-- תוכן SRT -->
+        <div id="srtContent" class="tab-content active">
+          <div class="transcription-container">
+            <div id="srtTranscription"></div>
+            <div class="transcription-fade"></div>
+            <button class="expand-button" onclick="toggleTranscription(this)">הצג הכל</button>
+          </div>
+        </div>
+        
+        <!-- תוכן טקסט רגיל -->
+        <div id="plainTextContent" class="tab-content">
+          <div class="transcription-container">
+            <div id="plainTextTranscription"></div>
+            <div class="transcription-fade"></div>
+            <button class="expand-button" onclick="toggleTranscription(this)">הצג הכל</button>
+          </div>
+        </div>
+        
+        <!-- תוכן עריכה -->
+        <div id="editTextContent" class="tab-content">
+          <textarea id="editableTranscription" class="edit-transcription show" placeholder="עריכת התמלול..."></textarea>
+          <button class="control-button" onclick="saveEditedTranscription()">
+            <i class="fas fa-save"></i> שמור שינויים
+          </button>
+        </div>
+        
+        <!-- כפתורי פעולה -->
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-top: 15px;">
+          <button class="control-button" onclick="copyToClipboard()">
+            <i class="fas fa-copy"></i> העתק
+          </button>
+          <button class="control-button" onclick="downloadTranscription()">
+            <i class="fas fa-download"></i> הורד
+          </button>
+          <button class="control-button" onclick="identifySpeakers()">
+            <i class="fas fa-users"></i> זהה דוברים
+          </button>
+          <button class="control-button" onclick="summarizeMeeting()">
+            <i class="fas fa-clipboard-list"></i> סכם
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- פופאפ להצגת סיכום הפגישה -->
+    <div id="summaryPopup" class="popup">
+      <div class="popup-content">
+        <button class="close-container" onclick="closePopup('summaryPopup')">&times;</button>
+        <h3>סיכום הפגישה</h3>
+        <div id="summaryContent"></div>
+        <div class="popup-footer">
+          <button class="control-button" onclick="downloadSummary()">
+            <i class="fas fa-download"></i> הורד כטקסט
+          </button>
+          <button class="control-button" onclick="sendSummaryByEmail()">
+            <i class="fas fa-envelope"></i> שלח במייל
+          </button>
+          <button class="control-button" onclick="translateSummary()">
+            <i class="fas fa-language"></i> תרגם
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- מכיל הודעות מערכת -->
+    <div class="toast-container" id="toastContainer"></div>
+    <script>
+      /* משתנים גלובליים */
+      let transcriptionResult;
+      let apiKey = "";
+      let summarizationApiKey = "";
+      let audioBlob;
+      let mediaRecorder;
+      let recordedChunks = [];
+      let isRecording = false;
+      let isPaused = false;
+      let audioSource = null;
+      let selectedFile = null;
+      let uploadedTextContent = "";
+      let accumulatedDuration = 0;
+      let finalTranscription = "";
+      let recordTimer;
+      let recordSeconds = 0;
+      let recordStream;
+      let audioContext;
+      let audioAnalyser;
+      let visualizationInterval;
+      let isDarkMode = false;
+      let retryCount = 0;
+      let maxRetries = 3;
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        // שימוש בהגדרות שמורות
+        loadStoredSettings();
+        // יצירת פסי ויזואליזציה להקלטה
+        createVisualizationBars(50); // מספר הפסים
+        // הגדרת כפתור החלפת תצוגה (כהה/בהיר)
+        document.querySelector('.theme-toggle').addEventListener('click', toggleDarkMode);
+        // הוספת אירועים להצגת/הסתרת מפתחות API
+        document.getElementById('showHideApiKey').addEventListener('click', () => togglePasswordVisibility('apiKeyInput', 'showHideApiKey'));
+        document.getElementById('showHideSummKey').addEventListener('click', () => togglePasswordVisibility('summarizationApiKeyInput', 'showHideSummKey'));
+        
+        // הגדרת אזורי גרירה ושחרור
+        setupDropZones();
+        
+        // הגדרת קיצורי מקלדת
+        setupKeyboardShortcuts();
+      });
+      
+      /* ========== הגדרת אזורי גרירה ושחרור ========== */
+      function setupDropZones() {
+        // קובץ אודיו
+        const audioDropZone = document.getElementById('audioDropZone');
+        const audioFileInput = document.getElementById('audioFile');
+        
+        audioDropZone.addEventListener('click', () => {
+          audioFileInput.click();
+        });
+        
+        audioDropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          audioDropZone.classList.add('drag-over');
+        });
+        
+        audioDropZone.addEventListener('dragleave', () => {
+          audioDropZone.classList.remove('drag-over');
+        });
+        
+        audioDropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          audioDropZone.classList.remove('drag-over');
+          
+          if (e.dataTransfer.files.length) {
+            audioFileInput.files = e.dataTransfer.files;
+            handleFileSelect({ target: audioFileInput });
+          }
+        });
+        
+        // קובץ טקסט
+        const textDropZone = document.getElementById('textDropZone');
+        const textFileInput = document.getElementById('textFile');
+        
+        textDropZone.addEventListener('click', () => {
+          textFileInput.click();
+        });
+        
+        textDropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          textDropZone.classList.add('drag-over');
+        });
+        
+        textDropZone.addEventListener('dragleave', () => {
+          textDropZone.classList.remove('drag-over');
+        });
+        
+        textDropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          textDropZone.classList.remove('drag-over');
+          
+          if (e.dataTransfer.files.length) {
+            textFileInput.files = e.dataTransfer.files;
+            handleTextFileSelect({ target: textFileInput });
+          }
+        });
+      }
+      
+      /* ========== הגדרת קיצורי מקלדת ========== */
+      function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+          // Alt + R = רענן
+          if (e.altKey && e.key === 'r') {
+            e.preventDefault();
+            refreshApp();
+          }
+          
+          // Alt + T = תמלל
+          if (e.altKey && e.key === 't') {
+            e.preventDefault();
+            transcribe();
+          }
+          
+          // Alt + S = סכם
+          if (e.altKey && e.key === 's') {
+            e.preventDefault();
+            if (window.finalTranscription) {
+              summarizeMeeting();
+            } else {
+              showMessage('⚠️ אין תמלול זמין לסיכום.', 'warning');
+            }
+          }
+          
+          // Alt + C = העתק
+          if (e.altKey && e.key === 'c') {
+            e.preventDefault();
+            copyToClipboard();
+          }
+        });
+      }
+      
+      /* ========== טעינת הגדרות מהאחסון המקומי ========== */
+      function loadStoredSettings() {
+        try {
+          // טען מפתחות API
+          const storedApiKey = localStorage.getItem('transcriptionApiKey');
+          const storedSummKey = localStorage.getItem('summarizationApiKey');
+          if (storedApiKey) {
+            document.getElementById('apiKeyInput').value = atob(storedApiKey);
+            apiKey = atob(storedApiKey);
+          }
+          if (storedSummKey) {
+            document.getElementById('summarizationApiKeyInput').value = atob(storedSummKey);
+            summarizationApiKey = atob(storedSummKey);
+          }
+          
+          // טען העדפת מצב כהה
+          const darkModePreference = localStorage.getItem('darkMode');
+          if (darkModePreference === 'true') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.theme-toggle i').classList.replace('fa-moon', 'fa-sun');
+            isDarkMode = true;
+          }
+          
+          // טען העדפות נוספות
+          const transcriptionQuality = localStorage.getItem('transcriptionQuality');
+          if (transcriptionQuality) {
+            document.getElementById('transcriptionQuality').value = transcriptionQuality;
+          }
+          
+          // טען מודל סיכום מועדף
+          const savedModel = localStorage.getItem('summaryModel');
+          if (savedModel) {
+            document.getElementById('summaryModel').value = savedModel;
+          }
+        } catch (error) {
+          console.error('Error loading stored settings:', error);
+        }
+      }
+      
+      /* ========== הצג/הסתר מפתחות סיסמה ========== */
+      function togglePasswordVisibility(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        const icon = button.querySelector('i');
+        
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('fa-eye', 'fa-eye-slash');
+          button.innerHTML = '<i class="fas fa-eye-slash"></i> הסתר';
+        } else {
+          input.type = 'password';
+          icon.classList.replace('fa-eye-slash', 'fa-eye');
+          button.innerHTML = '<i class="fas fa-eye"></i> הצג';
+        }
+      }
+      
+      /* ========== החלפת מצב תצוגה (כהה/בהיר) ========== */
+      function toggleDarkMode() {
+        const themeToggle = document.querySelector('.theme-toggle i');
+        document.body.classList.toggle('dark-mode');
+        
+        if (document.body.classList.contains('dark-mode')) {
+          themeToggle.classList.replace('fa-moon', 'fa-sun');
+          isDarkMode = true;
+        } else {
+          themeToggle.classList.replace('fa-sun', 'fa-moon');
+          isDarkMode = false;
+        }
+        
+        // שמירת ההעדפה באחסון המקומי
+        localStorage.setItem('darkMode', isDarkMode);
+      }
+      
+      /* ========== יצירת פסי ויזואליזציה להקלטה ========== */
+      function createVisualizationBars(count) {
+        const container = document.getElementById('visualizationBars');
+        container.innerHTML = '';
+        
+        for (let i = 0; i < count; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'bar';
+          bar.style.height = '3px';
+          container.appendChild(bar);
+        }
+      }
+      
+      /* ========== הפעלת ויזואליזציה בזמן הקלטה ========== */
+      function startVisualization(stream) {
+        if (!audioContext) {
+          audioContext = new AudioContext();
+        }
+        
+        const source = audioContext.createMediaStreamSource(stream);
+        audioAnalyser = audioContext.createAnalyser();
+        audioAnalyser.fftSize = 256;
+        source.connect(audioAnalyser);
+        
+        const bufferLength = audioAnalyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        const bars = document.querySelectorAll('.visualization-bars .bar');
+        
+        // מפסיק ויזואליזציה קודמת אם קיימת
+        if (visualizationInterval) {
+          clearInterval(visualizationInterval);
+        }
+        
+        visualizationInterval = setInterval(() => {
+          if (isRecording && !isPaused) {
+            audioAnalyser.getByteFrequencyData(dataArray);
+            
+            for (let i = 0; i < bars.length; i++) {
+              const barIndex = Math.floor(i * (bufferLength / bars.length));
+              const barHeight = Math.max(3, dataArray[barIndex] / 2); // מינימום גובה 3px
+              bars[i].style.height = barHeight + 'px';
+            }
+        } else if (isPaused) {
+            // בזמן השהייה, פסים ברמה נמוכה
+            for (let i = 0; i < bars.length; i++) {
+              bars[i].style.height = '3px';
+            }
+          }
+        }, 50);
+      }
+      
+      /* ========== עדכון טיימר הקלטה ========== */
+      function updateRecordingTimer() {
+        if (isRecording && !isPaused) {
+          recordSeconds++;
+          const minutes = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
+          const seconds = (recordSeconds % 60).toString().padStart(2, '0');
+          document.getElementById('recordTimer').textContent = `${minutes}:${seconds}`;
+        }
+      }
+      
+      /* ========== פונקציית הודעות ========== */
+      function showMessage(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'warning') icon = 'exclamation-triangle';
+        if (type === 'error') icon = 'exclamation-circle';
+        
+        toast.innerHTML = `
+          <div class="toast-icon"><i class="fas fa-${icon}"></i></div>
+          <div class="toast-message">${message}</div>
+          <button class="toast-close" onclick="this.parentElement.style.animation='toastOut 0.3s forwards'"><i class="fas fa-times"></i></button>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'toastOut 0.3s forwards';
+          setTimeout(() => {
+            container.removeChild(toast);
+          }, 300);
+        }, duration);
+      }
+      
+      /* ========== מעדכן את המדרגות (stepper) ========== */
+      function updateSteps(stepNumber) {
+        document.querySelectorAll('.step').forEach((step, index) => {
+          step.classList.remove('active', 'completed');
+          if (index + 1 < stepNumber) {
+            step.classList.add('completed');
+          } else if (index + 1 === stepNumber) {
+            step.classList.add('active');
+          }
+        });
+      }
+      
+      /* ========== רענון האפליקציה ========== */
+      function refreshApp() {
+        if (confirm('האם אתה בטוח שברצונך לרענן את האפליקציה? נתונים שלא נשמרו יאבדו.')) {
+          // שמור את מפתחות ה-API
+          const apiKey = document.getElementById('apiKeyInput').value;
+          const summKey = document.getElementById('summarizationApiKeyInput').value;
+          
+          // איפוס מצב האפליקציה
+          audioBlob = null;
+          selectedFile = null;
+          uploadedTextContent = "";
+          transcriptionResult = null;
+          window.finalTranscription = "";
+          
+          // איפוס רכיבי ממשק
+          document.getElementById('transcriptionCard').classList.remove('has-content');
+          document.getElementById('srtTranscription').innerHTML = '';
+          document.getElementById('plainTextTranscription').textContent = '';
+          document.getElementById('editableTranscription').value = '';
+          document.getElementById('fileDetails').innerHTML = '';
+          document.getElementById('textFileDetails').innerHTML = '';
+          document.getElementById('recordingStatus').style.display = 'none';
+          document.getElementById('audioFile').value = '';
+          document.getElementById('textFile').value = '';
+          
+          // חזרה לשלב 1
+          updateSteps(1);
+          
+          // הצג הודעת הצלחה
+          showMessage('✅ האפליקציה אופסה בהצלחה!', 'success');
+        }
+      }
+      
+      /* ========== בדיקת תקינות מפתחות API ========== */
+      async function testApiKeys() {
+        const inputApiKey = document.getElementById('apiKeyInput').value.trim();
+        const inputSummKey = document.getElementById('summarizationApiKeyInput').value.trim();
+        
+        if (!inputApiKey) {
+          showMessage('אנא הזן מפתח תמלול תקין', 'warning');
+          return;
+        }
+        
+        if (!inputSummKey) {
+          showMessage('אנא הזן מפתח סיכום תקין', 'warning');
+          return;
+        }
+        
+        showMessage('בודק תקינות מפתחות...', 'info');
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+          // בדיקת מפתח תמלול
+          if (!inputApiKey.startsWith('gsk_')) {
+            throw new Error('מפתח התמלול אינו בפורמט הנכון. מפתחות Groq מתחילים ב-gsk_');
+          }
+          
+          // בדיקת מפתח סיכום
+          if (!inputSummKey.startsWith('sk-')) {
+            throw new Error('מפתח הסיכום אינו בפורמט הנכון. מפתחות OpenRouter מתחילים ב-sk-');
+          }
+          
+          showMessage('✅ המפתחות נראים תקינים!', 'success');
+        } catch (error) {
+          showMessage(`❌ שגיאה: ${error.message}`, 'error');
+        } finally {
+          document.getElementById('loader').style.display = 'none';
+        }
+      }
+      
+      /* ========== שמירת מפתחות API ========== */
+      function saveApiKeys() {
+        const inputApiKey = document.getElementById('apiKeyInput').value.trim();
+        const inputSummKey = document.getElementById('summarizationApiKeyInput').value.trim();
+        const saveLocally = document.getElementById('saveApiLocally').checked;
+        
+        if (!inputApiKey) {
+          showMessage('אנא הזן מפתח תמלול תקין', 'warning');
+          return;
+        }
+        
+        if (!inputSummKey) {
+          showMessage('אנא הזן מפתח סיכום תקין', 'warning');
+          return;
+        }
+        
+        apiKey = inputApiKey;
+        summarizationApiKey = inputSummKey;
+        
+        // שמירה באחסון מקומי אם האפשרות מסומנת
+        if (saveLocally) {
+          try {
+            localStorage.setItem('transcriptionApiKey', btoa(inputApiKey));
+            localStorage.setItem('summarizationApiKey', btoa(inputSummKey));
+            localStorage.setItem('transcriptionQuality', document.getElementById('transcriptionQuality').value);
+            localStorage.setItem('summaryModel', document.getElementById('summaryModel').value);
+          } catch (error) {
+            console.error('Error saving API keys:', error);
+          }
+        }
+        
+        showMessage('✅ המפתחות נשמרו בהצלחה!', 'success');
+        toggleApiGuide();
+      }
+      
+      /* ========== API Guide לתמלול וסיכום ========== */
+      function toggleApiGuide() {
+        document.getElementById('apiGuideContainer').classList.toggle('show');
+      }
+      
+      /* ========== בחירת מקור אודיו ========== */
+      function toggleAudioSelection() {
+        document.getElementById('audioSelectionContainer').classList.toggle('show');
+        updateSteps(1);
+      }
+      
+      function showAudioTab(tabName) {
+        document.querySelectorAll('.audio-tab-button').forEach((btn) => btn.classList.remove('active'));
+        document.querySelectorAll('.audio-tab-content').forEach((tab) => tab.classList.remove('show'));
+        document.querySelector(`.audio-tab-button[onclick="showAudioTab('${tabName}')"]`).classList.add('active');
+        document.getElementById(`${tabName}InputTab`).classList.add('show');
+        audioSource = tabName;
+        document.getElementById('audioConfirmButtons').classList.add('show');
+        
+        if (tabName === 'file') {
+          selectedFile = null;
+          document.getElementById('audioFile').value = '';
+          document.getElementById('fileDetails').innerHTML = '';
+        } else if (tabName === 'text') {
+          selectedFile = null;
+          document.getElementById('textFile').value = '';
+          document.getElementById('textFileDetails').innerHTML = '';
+        } else if (tabName === 'record') {
+          if (!audioBlob) {
+            document.getElementById('recordVisualization').classList.remove('active');
+            document.getElementById('recordTimer').classList.remove('active');
+          }
+          updateRecordingStatus();
+        }
+      }
+      
+      function handleFileSelect(event) {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+          const fileSize = (selectedFile.size / (1024 * 1024)).toFixed(2);
+          let duration = '';
+          
+          // נסיון להשיג את משך הקובץ
+          const audio = new Audio();
+          audio.src = URL.createObjectURL(selectedFile);
+          
+          audio.addEventListener('loadedmetadata', function() {
+            const minutes = Math.floor(audio.duration / 60);
+            const seconds = Math.floor(audio.duration % 60);
+            duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('fileDetails').innerHTML = `
+              <strong>שם הקובץ:</strong> ${selectedFile.name}<br>
+              <strong>גודל:</strong> ${fileSize} MB<br>
+              <strong>אורך:</strong> ${duration}<br>
+              <strong>סוג:</strong> ${selectedFile.type}
+            `;
+          });
+          
+          showMessage(`✅ נבחר קובץ: ${selectedFile.name}`, 'success');
+        }
+      }
+      
+      function handleTextFileSelect(event) {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+          const fileSize = (selectedFile.size / 1024).toFixed(2);
+          let fileType = selectedFile.type;
+          if (!fileType) {
+            const extension = selectedFile.name.split('.').pop().toLowerCase();
+            if (extension === 'srt') fileType = 'כתוביות SRT';
+            else if (extension === 'txt') fileType = 'טקסט רגיל';
+            else fileType = 'לא ידוע';
+          }
+          
+          document.getElementById('textFileDetails').innerHTML = `
+            <strong>שם הקובץ:</strong> ${selectedFile.name}<br>
+            <strong>גודל:</strong> ${fileSize} KB<br>
+            <strong>סוג:</strong> ${fileType}
+          `;
+          
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            uploadedTextContent = e.target.result.trim();
+          };
+          reader.readAsText(selectedFile);
+          
+          showMessage(`✅ נבחר קובץ: ${selectedFile.name}`, 'success');
+        }
+      }
+      
+      function cancelAudio() {
+        audioSource = null;
+        selectedFile = null;
+        audioBlob = null;
+        document.getElementById('audioFile').value = '';
+        document.getElementById('textFile').value = '';
+        document.getElementById('fileDetails').innerHTML = '';
+        document.getElementById('textFileDetails').innerHTML = '';
+        updateRecordingStatus();
+        document.getElementById('audioConfirmButtons').classList.remove('show');
+        showMessage('⚠️ בוטל. ניתן לבחור מקור אודיו מחדש.', 'warning');
+      }
+      
+      function confirmAudioInput() {
+        if (audioSource === 'file') {
+          if (!selectedFile) {
+            showMessage('⚠️ אנא בחר קובץ אודיו', 'warning');
+            return;
+          }
+          showMessage(`✅ נבחר קובץ: ${selectedFile.name}`, 'success');
+        } else if (audioSource === 'record') {
+          if (!audioBlob) {
+            showMessage('⚠️ לא נמצאה הקלטה. אנא הקלט שוב.', 'warning');
+            return;
+          }
+          selectedFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
+          showMessage('🎤 ההקלטה מוכנה לתמלול.', 'success');
+        } else if (audioSource === 'text') {
+          if (!selectedFile) {
+            showMessage('⚠️ אנא בחר קובץ טקסט', 'warning');
+            return;
+          }
+          showMessage(`✅ נבחר קובץ: ${selectedFile.name}`, 'success');
+        } else {
+          showMessage('⚠️ אנא בחר מקור אודיו או טקסט', 'warning');
+          return;
+        }
+        
+        document.getElementById('audioConfirmButtons').classList.remove('show');
+        document.getElementById('audioSelectionContainer').classList.remove('show');
+        updateSteps(2);
+      }
+      
+      /* ========== ניהול הקלטה ========== */
+      async function toggleRecording() {
+        const recordButton = document.getElementById('recordButton');
+        const pauseButton = document.getElementById('pauseRecordButton');
+        
+        if (!isRecording) {
+          try {
+            recordedChunks = [];
+            recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(recordStream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+              }
+            };
+            
+            mediaRecorder.onstop = () => {
+              audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
+              selectedFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
+              
+              // הצגת תצוגה מקדימה של ההקלטה
+              const audioPreview = document.getElementById('recordingPreview');
+              audioPreview.src = URL.createObjectURL(audioBlob);
+              audioPreview.style.display = 'block';
+              
+              showMessage('✅ ההקלטה נשמרה בהצלחה!', 'success');
+              updateRecordingStatus();
+              
+              // ניקוי משאבים
+              if (recordStream) {
+                recordStream.getTracks().forEach(track => track.stop());
+              }
+              if (visualizationInterval) {
+                clearInterval(visualizationInterval);
+              }
+              if (recordTimer) {
+                clearInterval(recordTimer);
+              }
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            isPaused = false;
+            recordButton.innerHTML = '<i class="fas fa-stop"></i> סיים להקליט';
+            pauseButton.disabled = false;
+            
+            // הפעלת טיימר
+            recordSeconds = 0;
+            document.getElementById('recordTimer').textContent = '00:00';
+            document.getElementById('recordTimer').classList.add('active');
+            if (recordTimer) clearInterval(recordTimer);
+            recordTimer = setInterval(updateRecordingTimer, 1000);
+            
+            // הפעלת ויזואליזציה
+            document.getElementById('recordVisualization').classList.add('active');
+            startVisualization(recordStream);
+            
+            showMessage('🎤 ההקלטה החלה...', 'info');
+          } catch (error) {
+            console.error('❌ שגיאה בהקלטה:', error);
+            showMessage('⚠️ לא ניתן להתחיל הקלטה. ודא שהמיקרופון מופעל.', 'error');
+          }
+        } else {
+          mediaRecorder.stop();
+          isRecording = false;
+          isPaused = false;
+          recordButton.innerHTML = '<i class="fas fa-microphone"></i> הקלט מחדש';
+          pauseButton.innerHTML = '<i class="fas fa-pause"></i> השהה';
+          pauseButton.disabled = true;
+          showMessage('⏹️ ההקלטה נעצרה.', 'info');
+          
+          document.getElementById('recordVisualization').classList.remove('active');
+        }
+      }
+      
+      function pauseRecording() {
+        const pauseButton = document.getElementById('pauseRecordButton');
+        
+        if (isRecording && !isPaused) {
+          mediaRecorder.pause();
+          isPaused = true;
+          pauseButton.innerHTML = '<i class="fas fa-play"></i> המשך';
+          showMessage('⏸️ ההקלטה הושהתה.', 'info');
+        } else if (isRecording && isPaused) {
+          mediaRecorder.resume();
+          isPaused = false;
+          pauseButton.innerHTML = '<i class="fas fa-pause"></i> השהה';
+          showMessage('▶️ ההקלטה ממשיכה...', 'info');
+        }
+      }
+      
+      function playRecording() {
+        const audioPreview = document.getElementById('recordingPreview');
+        if (audioPreview.src) {
+          audioPreview.play();
+        }
+      }
+      
+      function deleteRecording() {
+        audioBlob = null;
+        selectedFile = null;
+        updateRecordingStatus();
+        showMessage('🗑️ ההקלטה נמחקה.', 'info');
+        
+        const audioPreview = document.getElementById('recordingPreview');
+        audioPreview.src = '';
+        audioPreview.style.display = 'none';
+      }
+      
+      function updateRecordingStatus() {
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordButton = document.getElementById('recordButton');
+        const pauseButton = document.getElementById('pauseRecordButton');
+        
+        if (audioBlob) {
+          recordingStatus.style.display = 'block';
+          recordButton.innerHTML = '<i class="fas fa-microphone"></i> הקלט מחדש';
+        } else {
+          recordingStatus.style.display = 'none';
+          recordButton.innerHTML = '<i class="fas fa-microphone"></i> התחל הקלטה';
+        }
+        
+        pauseButton.disabled = true;
+        pauseButton.innerHTML = '<i class="fas fa-pause"></i> השהה';
+      }
+      
+      /* ========== תמלול ========== */
+      function validateAudioFile(file) {
+        if (!file) throw new Error('לא נבחר קובץ');
+        
+        const validTypes = [
+          'audio/wav',
+          'audio/mp3',
+          'audio/mpeg',
+          'audio/mp4',
+          'audio/webm',
+          'audio/m4a',
+          'audio/aac',
+          'video/mp4',
+          'video/webm'
+        ];
+        
+        // בדיקת סוג הקובץ
+        if (file.type && !validTypes.includes(file.type)) {
+          // אם יש סוג קובץ מוגדר, וודא שהוא נתמך
+          throw new Error(`סוג הקובץ "${file.type}" לא נתמך. אנא השתמש בקובץ אודיו או וידאו נתמך.`);
+        }
+        
+        // בדיקה לפי סיומת, למקרה שסוג הקובץ לא מוגדר
+        if (!file.type) {
+          const ext = file.name.split('.').pop().toLowerCase();
+          const validExt = ['wav', 'mp3', 'mpeg', 'mp4', 'webm', 'm4a', 'aac'];
+          if (validExt.indexOf(ext) === -1) {
+            throw new Error('סוג הקובץ לא נתמך (בדיקת סיומת).');
+          }
+        }
+        
+        // בדיקת גודל קובץ
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+          throw new Error('הקובץ גדול מדי (מקסימום 100MB). אנא חלק את הקובץ לחלקים קטנים יותר.');
+        }
+        
+        return true;
+      }
+      
+      /* ========== סיכום ישיר של קובץ טקסט ========== */
+      function summarizeTextFile() {
+        if (!uploadedTextContent || !uploadedTextContent.trim()) {
+          showMessage('⚠️ לא נמצא תוכן לסיכום.', 'warning');
+          return;
+        }
+        
+        if (!summarizationApiKey) {
+          showMessage('❗ נדרש מפתח API לסיכום.', 'error');
+          toggleApiGuide();
+          return;
+        }
+        
+        // דלג על תמלול ועבור ישירות לסיכום
+        window.finalTranscription = uploadedTextContent;
+        summarizeMeeting(uploadedTextContent);
+      }
+      
+      async function transcribe() {
+        updateSteps(2);
+        
+        // אם מקור הקלט הוא טקסט - עדכנו את התצוגה
+        if (audioSource === 'text') {
+          if (!uploadedTextContent || !uploadedTextContent.trim()) {
+            showMessage('⚠️ לא נמצא תוכן לתמלול.', 'warning');
+            return;
+          }
+          window.finalTranscription = uploadedTextContent;
+          updateTranscriptionFromText();
+          showMessage('✅ התמלול (טקסט) הושלם בהצלחה!', 'success');
+          updateSteps(3);
+          return;
+        }
+        
+        if (!apiKey) {
+          showMessage('❗ אנא הזן API Key לתמלול תחילה.', 'error');
+          toggleApiGuide();
+          return;
+        }
+        
+        let audioFile;
+        if (audioSource === 'file' || audioSource === 'record') {
+          if (!selectedFile) {
+            showMessage('⚠️ לא נמצא קובץ לתמלול. בחר מקור אודיו.', 'warning');
+            toggleAudioSelection();
+            return;
+          }
+          audioFile = selectedFile;
+        } else {
+          showMessage('❗ אנא בחר מקור אודיו.', 'warning');
+          toggleAudioSelection();
+          return;
+        }
+        
+        accumulatedDuration = 0;
+        showMessage('🔄 מתחיל תמלול...', 'info');
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('transcribeButton').disabled = true;
+        
+        try {
+          validateAudioFile(audioFile);
+          const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB לכל חלק
+          const chunks = await splitAudioFile(audioFile, CHUNK_SIZE);
+          transcriptionResult = { segments: [] };
+          retryCount = 0; // איפוס מונה הניסיונות
+          
+          for (let i = 0; i < chunks.length; i++) {
+            const chunkResult = await transcribeChunkWithRetry(chunks[i], i + 1, chunks.length);
+            if (chunkResult && chunkResult.segments) {
+              transcriptionResult.segments.push(...chunkResult.segments);
+            }
+          }
+          
+          updateTranscription();
+          showMessage('✅ התמלול הושלם בהצלחה!', 'success');
+          updateSteps(3);
+        } catch (error) {
+          console.error('❌ שגיאה בתמלול:', error);
+          showMessage(`⚠️ שגיאה בתמלול: ${error.message}`, 'error');
+        } finally {
+          document.getElementById('loader').style.display = 'none';
+          document.getElementById('progressContainer').style.display = 'none';
+          document.getElementById('transcribeButton').disabled = false;
+        }
+      }
+      
+      // תמלול עם ניסיונות חוזרים
+      async function transcribeChunkWithRetry(chunk, chunkNumber, totalChunks) {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+          try {
+            return await transcribeChunk(chunk, chunkNumber, totalChunks);
+          } catch (error) {
+            attempt++;
+            console.warn(`ניסיון תמלול ${attempt} נכשל:`, error);
+            
+            if (attempt < maxRetries) {
+              // המתנה לפני ניסיון נוסף (זמן המתנה גדל אקספוננציאלית)
+              const waitTime = 2000 * Math.pow(2, attempt - 1);
+              showMessage(`ניסיון ${attempt} נכשל. מנסה שוב בעוד ${waitTime/1000} שניות...`, 'warning');
+              await new Promise(r => setTimeout(r, waitTime));
+            } else {
+              throw error; // זריקת השגיאה אם כל הניסיונות נכשלו
+            }
+          }
+        }
+      }
+      
+      async function transcribeChunk(chunk, chunkNumber, totalChunks) {
+        const formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('model', 'whisper-large-v3');
+        formData.append('response_format', 'verbose_json');
+        
+        // הגדרת איכות התמלול
+        const quality = document.getElementById('transcriptionQuality').value;
+        if (quality === 'high') {
+          formData.append('temperature', '0');
+        } else if (quality === 'medium') {
+          formData.append('temperature', '0.2');
+        } else {
+          formData.append('temperature', '0.4');
+        }
+        
+        // הגדרת שפה
+        const selectedLanguage = document.getElementById('transcriptionLanguage').value;
+        if (selectedLanguage !== 'auto') {
+          formData.append('language', selectedLanguage);
+        }
+        
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const chunkProgress = (event.loaded / event.total) * 100;
+              const previousChunksProgress = ((chunkNumber - 1) / totalChunks) * 100;
+              const currentChunkContribution = chunkProgress / totalChunks;
+              const totalProgress = previousChunksProgress + currentChunkContribution;
+              
+              const progressInfo = `
+                חלק ${chunkNumber} מתוך ${totalChunks}<br>
+                התקדמות בחלק הנוכחי: ${Math.round(chunkProgress)}%<br>
+                התקדמות כללית: ${Math.round(totalProgress)}%
+              `;
+              updateProgress(totalProgress, progressInfo);
+            }
+          };
+          
+          xhr.onload = async () => {
+            if (xhr.status === 200) {
+              const response = JSON.parse(xhr.responseText);
+              if (response.segments) {
+                // הוסף את המשך הזמן המצטבר לכל מקטע
+                response.segments = response.segments.map((segment) => ({
+                  ...segment,
+                  start: segment.start + accumulatedDuration,
+                  end: segment.end + accumulatedDuration,
+                }));
+                
+                if (response.segments.length > 0) {
+                  const lastSegment = response.segments[response.segments.length - 1];
+                  accumulatedDuration = lastSegment.end;
+                }
+              }
+              resolve(response);
+            } else {
+              let errorMessage = 'שגיאת שרת לא ידועה';
+              try {
+                const errorResponse = JSON.parse(xhr.responseText);
+                errorMessage = errorResponse.error?.message || errorResponse.message || errorMessage;
+              } catch (e) {
+                errorMessage = xhr.responseText || errorMessage;
+              }
+              console.error('Server Error:', {
+                status: xhr.status,
+                message: errorMessage,
+                response: xhr.responseText,
+              });
+              reject(new Error(`שגיאת שרת (${xhr.status}): ${errorMessage}`));
+            }
+          };
+          
+          xhr.onerror = () => {
+            reject(new Error('שגיאת רשת - אנא בדוק את החיבור לאינטרנט'));
+          };
+          
+          xhr.ontimeout = () => {
+            reject(new Error('פסק זמן - הבקשה ארכה זמן רב מדי'));
+          };
+          
+          xhr.open('POST', 'https://api.groq.com/openai/v1/audio/transcriptions');
+          xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
+          xhr.timeout = 300000; // 5 דקות
+          
+          try {
+            xhr.send(formData);
+          } catch (error) {
+            reject(new Error(`שגיאה בשליחת הקובץ: ${error.message}`));
+          }
+        });
+      }
+      
+      async function splitAudioFile(file, chunkSize) {
+        const chunks = [];
+        for (let start = 0; start < file.size; start += chunkSize) {
+          const chunk = file.slice(start, Math.min(start + chunkSize, file.size));
+          chunks.push(
+            new File(
+              [chunk],
+              `chunk_${chunks.length + 1}.${file.name.split('.').pop()}`,
+              { type: file.type }
+            )
+          );
+        }
+        return chunks;
+      }
+      function updateTranscription() {
+        if (!transcriptionResult) return;
+        
+        const transcriptionCard = document.getElementById('transcriptionCard');
+        transcriptionCard.classList.add('has-content');
+        
+        let srtFormat = '';
+        let plainText = '';
+        let subtitleIndex = 1;
+        const wordsPerSubtitle = 12;
+        
+        if (transcriptionResult.segments && transcriptionResult.segments.length > 0) {
+          transcriptionResult.segments.forEach((segment) => {
+            const subtitles = splitIntoSubtitles(segment.text, segment.start, segment.end, wordsPerSubtitle);
+            subtitles.forEach((subtitle) => {
+              srtFormat += `${subtitleIndex}\n`;
+              srtFormat += `${formatTime(subtitle.start)} --> ${formatTime(subtitle.end)}\n`;
+              srtFormat += `${subtitle.text}\n\n`;
+              plainText += subtitle.text + ' ';
+              subtitleIndex++;
+            });
+          });
+          
+          document.getElementById('srtTranscription').innerHTML = `<pre>${srtFormat}</pre>`;
+          document.getElementById('plainTextTranscription').textContent = plainText.trim();
+          document.getElementById('editableTranscription').value = plainText.trim();
+        } else {
+          document.getElementById('srtTranscription').innerHTML = '<p>לא התקבל תמלול או שהתמלול ריק</p>';
+          document.getElementById('plainTextTranscription').textContent = '';
+          document.getElementById('editableTranscription').value = '';
+        }
+        
+        window.finalTranscription = plainText.trim();
+      }
+      
+      // כאשר מקור הקלט הוא טקסט, עדכון התצוגה
+      function updateTranscriptionFromText() {
+        document.getElementById('transcriptionCard').classList.add('has-content');
+        window.finalTranscription = uploadedTextContent;
+        document.getElementById('srtTranscription').innerHTML = `<pre>${uploadedTextContent}</pre>`;
+        document.getElementById('plainTextTranscription').textContent = uploadedTextContent;
+        document.getElementById('editableTranscription').value = uploadedTextContent;
+      }
+      
+      function splitIntoSubtitles(text, startTime, endTime, maxWords) {
+        const words = text.split(' ');
+        const subtitles = [];
+        let currentSubtitle = { text: '', start: startTime };
+        let wordCount = 0;
+        
+        words.forEach((word, index) => {
+          currentSubtitle.text += word + ' ';
+          wordCount++;
+          
+          if (wordCount >= maxWords || index === words.length - 1) {
+            const progress = index / words.length;
+            const currentTime = startTime + (endTime - startTime) * progress;
+            currentSubtitle.end = currentTime;
+            subtitles.push({ ...currentSubtitle });
+            
+            if (index < words.length - 1) {
+              currentSubtitle = {
+                text: '',
+                start: currentTime
+              };
+              wordCount = 0;
+            }
+          }
+        });
+        
+        return subtitles;
+      }
+      
+      function formatTime(seconds) {
+        const date = new Date(seconds * 1000);
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        const secs = date.getUTCSeconds().toString().padStart(2, '0');
+        const ms = date.getUTCMilliseconds().toString().padStart(3, '0');
+        return `${hours}:${minutes}:${secs},${ms}`;
+      }
+      
+      /* ========== עדכון התקדמות ========== */
+      function updateProgress(percent, chunkInfo = '') {
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        progressFill.style.width = `${percent}%`;
+        progressText.innerHTML = chunkInfo || `${Math.round(percent)}%`;
+      }
+      
+      /* ========== שמירת התמלול לאחר עריכה ========== */
+      function saveEditedTranscription() {
+        const editedText = document.getElementById('editableTranscription').value.trim();
+        if (!editedText) {
+          showMessage('⚠️ לא ניתן לשמור תמלול ריק.', 'warning');
+          return;
+        }
+        
+        window.finalTranscription = editedText;
+        document.getElementById('plainTextTranscription').textContent = editedText;
+        showMessage('✅ התמלול המעודכן נשמר!', 'success');
+        showTab('plainText');
+      }
+      
+      /* ========== פונקצית API מנשק משופרת ========== */
+      async function makeApiRequestWithRetry(url, options, maxRetries = 3) {
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+            return await response.json();
+          } catch (error) {
+            lastError = error;
+            console.warn(`Attempt ${attempt} failed:`, error.message);
+            
+            // ניסיון חוזר רק בשגיאות רשת או שגיאות שרת 5xx
+            if (!error.message.includes('5') && !error.message.includes('network')) {
+              break;
+            }
+            
+            // המתנה לפני ניסיון נוסף (זמן המתנה גדל אקספוננציאלית)
+            if (attempt < maxRetries) {
+              const waitTime = 1000 * Math.pow(2, attempt - 1);
+              await new Promise(r => setTimeout(r, waitTime));
+            }
+          }
+        }
+        
+        throw lastError;
+      }
+      
+      /* ========== זיהוי דוברים (משופר) ========== */
+      async function identifySpeakers() {
+        if (!window.finalTranscription) {
+          showMessage('⚠️ אין תמלול לניתוח דוברים.', 'warning');
+          return;
+        }
+        
+        if (!summarizationApiKey) {
+          showMessage('❗ נדרש מפתח API לזיהוי דוברים.', 'error');
+          toggleApiGuide();
+          return;
+        }
+        
+        showMessage('🔍 מזהה דוברים...', 'info');
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+          // שיפור הבקשה לזיהוי דוברים
+          const systemPrompt = `
+            אתה מומחה בזיהוי דוברים שונים בתמלילים. 
+            עליך לנתח את התמלול ולהבחין בין דוברים שונים באופן ברור. 
+            עבור כל דובר, סמן "דובר X:" (מספר הדובר) בתחילת כל קטע שהוא אומר.
+            
+            הנחיות חשובות:
+            1. שים לב לשינויי סגנון דיבור, נושאים, ותפקידים
+            2. אם ניתן לזהות את שם הדובר או תפקידו, השתמש בו במקום "דובר X"
+            3. שמור על הטקסט המקורי בדיוק
+            4. אל תוסיף או תסיר תוכן
+            5. אם יש בתמלול סימוני זמן, שמור עליהם
+            
+            דוגמה לפלט:
+            דובר 1 (מנהל): אנחנו צריכים לעבור על הנתונים.
+            דובר 2 (שיווק): התוצאות של הקמפיין האחרון הגיעו.
+          `;
+          
+          // שימוש בחלוקה חכמה לחלקים עם חפיפה
+          const chunks = splitTextIntoSmartChunks(window.finalTranscription, 4000);
+          let processedText = '';
+          
+          for (let i = 0; i < chunks.length; i++) {
+            showMessage(`מעבד חלק ${i + 1} מתוך ${chunks.length}...`, 'info');
+            
+            try {
+              const options = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${summarizationApiKey}`
+                },
+                body: JSON.stringify({
+                  model: document.getElementById('summaryModel').value,
+                  messages: [
+                    {
+                      role: 'system',
+                      content: systemPrompt
+                    },
+                    {
+                      role: 'user',
+                      content: chunks[i]
+                    }
+                  ],
+                  temperature: 0.2
+                })
+              };
+              
+              const result = await makeApiRequestWithRetry(
+                'https://openrouter.ai/api/v1/chat/completions',
+                options
+              );
+              
+              if (!result || !result.choices || !result.choices[0]) {
+                throw new Error(`תשובה לא תקינה מהשרת: ${JSON.stringify(result)}`);
+              }
+              
+              const summary = result.choices[0].message.content;
+              if (summary) {
+                fullSummary += summary + ' ';
+              } else {
+                console.warn('התקבל סיכום ריק מהשרת:', result);
+              }
+            } catch (error) {
+              console.error(`שגיאה בעיבוד חלק ${i + 1}:`, error);
+              showMessage(`⚠️ שגיאה בעיבוד חלק ${i + 1}. מנסה להמשיך...`, 'warning');
+            }
+          }
+          
+          if (!processedText.trim()) {
+            throw new Error('לא התקבל תוכן מזוהה');
+          }
+          
+          // עדכון התמלול עם הדוברים המזוהים
+          window.finalTranscription = processedText.trim();
+          document.getElementById('plainTextTranscription').textContent = processedText.trim();
+          document.getElementById('editableTranscription').value = processedText.trim();
+          
+          showMessage('✅ הדוברים זוהו והתמלול עודכן!', 'success');
+          showTab('plainText');
+        } catch (error) {
+          console.error('שגיאה בזיהוי דוברים:', error);
+          showMessage(`⚠️ שגיאה בזיהוי דוברים: ${error.message}`, 'error');
+        } finally {
+          document.getElementById('loader').style.display = 'none';
+        }
+      }
+      
+      /* ========== חלוקת טקסט חכמה לחלקים ========== */
+      function splitTextIntoSmartChunks(text, maxChunkSize) {
+        // אם הטקסט קטן מספיק, אין צורך לחלק
+        if (text.length <= maxChunkSize) return [text];
+        
+        // עבור טקסטים גדולים יותר, שאיפה ל-2-3 חלקים מקסימום כמבוקש
+        const idealChunkSize = Math.ceil(text.length / 2);
+        const chunkSize = Math.max(maxChunkSize, idealChunkSize);
+        
+        const chunks = [];
+        // ניסיון לחלק בגבולות פסקאות לחלקים יותר קוהרנטיים
+        const paragraphs = text.split('\n\n');
+        let currentChunk = '';
+        
+        for (const paragraph of paragraphs) {
+          if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
+            chunks.push(currentChunk.trim());
+            currentChunk = paragraph;
+          } else {
+            currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+          }
+        }
+        
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.trim());
+        }
+        
+        return chunks;
+      }
+      
+      /* ========== Tabs: החלפה בין SRT, טקסט רגיל ועריכה ========== */
+      function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach((b) => b.classList.remove('active'));
+        document.getElementById(`${tabName}Content`).classList.add('active');
+        document.querySelector(`.tab-button[onclick="showTab('${tabName}')"]`).classList.add('active');
+      }
+      
+      function toggleTranscription(button) {
+        const container = button.parentElement;
+        container.classList.toggle('expanded');
+        
+        if (container.classList.contains('expanded')) {
+          button.textContent = 'הסתר';
+        } else {
+          button.textContent = 'הצג הכל';
+        }
+      }
+      
+      function closeTranscription() {
+        document.getElementById('transcriptionCard').classList.remove('has-content');
+      }
+      
+      function copyToClipboard() {
+        const activeTab = document.querySelector('.tab-content.active');
+        let text;
+        
+        if (activeTab.id === 'editTextContent') {
+          text = document.getElementById('editableTranscription').value;
+        } else {
+          text = activeTab.innerText;
+        }
+        
+        navigator.clipboard.writeText(text).then(
+          () => showMessage('✅ הטקסט הועתק ללוח', 'success'),
+          (err) => {
+            console.error('שגיאה בהעתקה:', err);
+            showMessage('❌ שגיאה בהעתקה', 'error');
+          }
+        );
+      }
+      
+      /* ========== הורדת התמלול בפורמטים שונים ========== */
+      function downloadTranscription() {
+        if (!window.finalTranscription) {
+          showMessage('⚠️ אין תמלול זמין להורדה', 'warning');
+          return;
+        }
+        
+        // בודק איזה טאב פעיל: SRT או טקסט רגיל
+        let content, fileExt;
+        
+        if (document.getElementById('srtContent').classList.contains('active')) {
+          content = document.getElementById('srtTranscription').innerText;
+          fileExt = 'srt';
+        } else if (document.getElementById('plainTextContent').classList.contains('active')) {
+          content = document.getElementById('plainTextTranscription').innerText;
+          fileExt = 'txt';
+        } else {
+          content = document.getElementById('editableTranscription').value;
+          fileExt = 'txt';
+        }
+        
+        const date = new Date().toISOString().split('T')[0];
+        downloadContent(content, `transcription_${date}.${fileExt}`);
+        showMessage(`✅ התמלול הורד כקובץ .${fileExt}`, 'success');
+      }
+      
+      function downloadTranscriptionAsWord() {
+        if (!window.finalTranscription) {
+          showMessage('⚠️ אין תמלול זמין להורדה', 'warning');
+          return;
+        }
+        
+        // יצירת מסמך Word בעזרת ספריית docx.js
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+        
+        // קביעת התוכן לפי הטאב הפעיל
+        let content;
+        
+        if (document.getElementById('srtContent').classList.contains('active')) {
+          content = document.getElementById('srtTranscription').innerText;
+        } else if (document.getElementById('plainTextContent').classList.contains('active')) {
+          content = document.getElementById('plainTextTranscription').innerText;
+        } else {
+          content = document.getElementById('editableTranscription').value;
+        }
+        
+        try {
+          // פיצול לפסקאות
+          const paragraphs = content.split('\n').map(line => 
+            new Paragraph({
+              children: [new TextRun({ text: line, size: 24 })],
+              spacing: { line: 360 }, // שורה וחצי
+              bidirectional: true,  // תמיכה ב-RTL
+              alignment: 'right'    // יישור לימין לעברית
+            })
+          );
+          
+          // יצירת המסמך
+          const doc = new Document({
+            sections: [{
+              properties: {
+                page: {
+                  margin: {
+                    top: 1440,
+                    right: 1440,
+                    bottom: 1440,
+                    left: 1440
+                  }
+                }
+              },
+              children: paragraphs
+            }]
+          });
+          
+          // יצוא המסמך
+          Packer.toBlob(doc).then(blob => {
+            const date = new Date().toISOString().split('T')[0];
+            saveAs(blob, `transcription_${date}.docx`);
+            showMessage('✅ התמלול הורד כקובץ Word', 'success');
+          }).catch(error => {
+            console.error('Error generating Word document:', error);
+            showMessage('❌ שגיאה ביצירת מסמך Word', 'error');
+          });
+        } catch (error) {
+          console.error('Error creating Word document:', error);
+          showMessage('❌ שגיאה ביצירת מסמך Word', 'error');
+        }
+      }
+      
+      function downloadContent(content, fileName) {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        saveAs(blob, fileName);
+      }
+      
+      /* ========== סיכום פגישה ========== */
+      async function summarizeMeeting(text = '') {
+        updateSteps(4);
+        
+        if (!text.trim()) {
+          text = window.finalTranscription || '';
+        }
+        
+        if (!text.trim()) {
+          showMessage('⚠️ אין תוכן זמין לסיכום.', 'warning');
+          return;
+        }
+        
+        if (!summarizationApiKey) {
+          showMessage('❗ נדרש מפתח API לסיכום.', 'error');
+          toggleApiGuide();
+          return;
+        }
+        
+        showMessage('🔄 מכין סיכום תמלול...', 'info');
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+          // שימוש בחלוקה חכמה כדי למנוע סיכומים מפוצלים
+          let chunks = splitTextIntoSmartChunks(text, 4000);
+          // במידה ואפשר, השתמש במקסימום 2 חלקים
+          if (chunks.length > 2) {
+            chunks = splitTextIntoSmartChunks(text, Math.ceil(text.length / 2));
+          }
+          
+          let fullSummary = '';
+          
+          for (let i = 0; i < chunks.length; i++) {
+            showMessage(`מסכם חלק ${i + 1} מתוך ${chunks.length}...`, 'info');
+            
+            try {
+              const options = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${summarizationApiKey}`
+                },
+                body: JSON.stringify({
+                  model: document.getElementById('summaryModel').value,
+                  messages: [
+                    {
+                      role: 'system',
+                      content: 'אתה עוזר לסיכום טקסט בעברית. סכם את הטקסט בפורמט מובנה עם כותרות, רשימות ומסקנות. הסיכום צריך להיות מפורט אך תמציתי וממוקד בנקודות העיקריות.'
+                    },
+                    {
+                      role: 'user',
+                      content: chunks[i]
+                    }
+                  ],
+                  temperature: 0.2
+                })
+              };
+              
+              const result = await makeApiRequestWithRetry(
+                'https://openrouter.ai/api/v1/chat/completions',
+                options
+              );
+              
+              const summary = result.choices[0].message.content;
+              if (summary) {
+                fullSummary += summary + ' ';
+              }
+            } catch (error) {
+              console.error(`שגיאה בסיכום חלק ${i + 1}:`, error);
+              showMessage(`⚠️ שגיאה בסיכום חלק ${i + 1}. מנסה להמשיך...`, 'warning');
+            }
+          }
+          
+          if (!fullSummary.trim()) {
+            throw new Error('לא התקבל סיכום מהשרת');
+          }
+          
+          document.getElementById('summaryContent').innerHTML = 
+            `<div style="white-space: pre-wrap;">${fullSummary}</div>`;
+          document.getElementById('summaryPopup').style.display = 'flex';
+        } catch (error) {
+          console.error('שגיאה בהכנת סיכום הפגישה:', error);
+          showMessage(`⚠️ שגיאה בהכנת סיכום הפגישה: ${error.message}`, 'error');
+        } finally {
+          document.getElementById('loader').style.display = 'none';
+        }
+      }
+      
+      /* ========== הורדת סיכום הפגישה ========== */
+      function downloadSummary() {
+        const content = document.getElementById('summaryContent').innerText;
+        const date = new Date().toISOString().split('T')[0];
+        downloadContent(content, `summary_${date}.txt`);
+        showMessage('✅ הסיכום הורד כקובץ טקסט', 'success');
+      }
+      
+      /* ========== שליחת סיכום במייל ========== */
+      function sendSummaryByEmail() {
+        const subject = encodeURIComponent('סיכום פגישה');
+        const body = encodeURIComponent(document.getElementById('summaryContent').innerText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        updateSteps(5);
+      }
+      
+      /* ========== תרגום סיכום ========== */
+      async function translateSummary() {
+        const summaryContent = document.getElementById('summaryContent').innerText;
+        
+        if (!summaryContent) {
+          showMessage('⚠️ אין סיכום לתרגום.', 'warning');
+          return;
+        }
+        
+        if (!summarizationApiKey) {
+          showMessage('❗ נדרש מפתח API לתרגום.', 'error');
+          toggleApiGuide();
+          return;
+        }
+        
+        // שאל את המשתמש לאיזו שפה לתרגם
+        const language = prompt('לאיזו שפה לתרגם את הסיכום? (אנגלית, ערבית, רוסית, וכו\')', 'אנגלית');
+        
+        if (!language) return;
+        
+        showMessage(`🔄 מתרגם לשפה: ${language}...`, 'info');
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+          // חלוקה חכמה של הטקסט
+          const chunks = splitTextIntoSmartChunks(summaryContent, 2000);
+          let translatedText = '';
+          
+          for (let i = 0; i < chunks.length; i++) {
+            showMessage(`מתרגם חלק ${i + 1} מתוך ${chunks.length}...`, 'info');
+            
+            try {
+              const options = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${summarizationApiKey}`
+                },
+                body: JSON.stringify({
+                  model: document.getElementById('summaryModel').value,
+                  messages: [
+                    {
+                      role: 'system',
+                      content: `אתה מתרגם מקצועי. תרגם את הטקסט הבא מעברית ל${language}. שמור על פורמט הטקסט המקורי.`
+                    },
+                    {
+                      role: 'user',
+                      content: chunks[i]
+                    }
+                  ],
+                  temperature: 0.1
+                })
+              };
+              
+              const result = await makeApiRequestWithRetry(
+                'https://openrouter.ai/api/v1/chat/completions',
+                options
+              );
+              
+              translatedText += result.choices[0].message.content + ' ';
+            } catch (error) {
+                console.error(`שגיאה בתרגום חלק ${i + 1}:`, error);
+              showMessage(`⚠️ שגיאה בתרגום חלק ${i + 1}. מנסה להמשיך...`, 'warning');
+            }
+          }
+          
+          if (!translatedText.trim()) {
+            throw new Error('לא התקבל תרגום');
+          }
+          
+          // עדכון התוכן עם התרגום
+          document.getElementById('summaryContent').innerHTML = 
+            `<div style="white-space: pre-wrap;">${translatedText.trim()}</div>`;
+          
+          showMessage(`✅ הסיכום תורגם ל${language} בהצלחה!`, 'success');
+        } catch (error) {
+          console.error('שגיאה בתרגום:', error);
+          showMessage(`⚠️ שגיאה בתרגום: ${error.message}`, 'error');
+        } finally {
+          document.getElementById('loader').style.display = 'none';
+        }
+      }
+      
+      /* ========== סגירת פופאפים ========== */
+      function closePopup(popupId) {
+        document.getElementById(popupId).style.display = 'none';
+      }
+    </script>
+  </body>
+</html>
